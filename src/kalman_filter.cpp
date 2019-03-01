@@ -24,12 +24,18 @@ void KalmanFilter::Init(VectorXd &x_in, MatrixXd &P_in, MatrixXd &F_in,
 
 void KalmanFilter::Predict() {
   //Predict
+  
   x_=F_*x_+u;
   MatrixXd F_t = F_.transpose();
   P_=F_*P_*F_t;
 }
 
 void KalmanFilter::Update(const VectorXd &z) {
+  VectorXd y = z - H_ * x_;
+  MatrixXd H_t = H_.transpose();
+  MatrixXd S_ = H_ * P_ * H_t + R_;
+  MatrixXd S_i = S_.inverse();
+  MatrixXd K =  P_ * H_t * S_i;
   //new state
   	x_=x_in+K*y;
 	P_=(I-K*H_)*P_in;
@@ -37,9 +43,11 @@ void KalmanFilter::Update(const VectorXd &z) {
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
    //Update
-    VectorXd y = z - H_ * x_;
-    MatrixXd H_t = H_.transpose();
-    MatrixXd S_ = H_ * P_ * H_t + R_;
-    MatrixXd S_i = S_.inverse();
-    MatrixXd K =  P_ * H_t * S_i;
+  float p_x=VectorXd[0]
+  float p_y = VectorXd[1]
+  float v_x = VectorXd[2]
+  float v_y = VectorXd[3]
+   
+  Vector h_x = [pow((pow(p_x,2)+pow(p_y,2)),0.5);atan(p_y/p_x);(p_x*v_x+p_y*v_y)/(pow((pow(p_x,2)+pow(p_y,2)),0.5);atan(p_y/p_x)]
+  y=z- h_x
 }
