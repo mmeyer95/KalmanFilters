@@ -39,10 +39,19 @@ void KalmanFilter::Update(const VectorXd &z) {
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
-   //Use Jacobian
-   
-  y = z- H_
-     
+  //calculate h(x') individual terms, check for negative angle value
+  float h1 = pow(pow(x_[0],2),pow(x_[1],2),0.5);
+  float h2 = atan2(x_[1]/x_[0]);
+  if (h2<0) {
+    h2 = h2 +pi;
+  }
+  float h3 = (x_[0]*x_[2]+x_[1]*x_[3])/h1;
+  h_funct = vectorXd(3);
+  h_funct << h1,h2,h3;
+  
+  //calculate z using h(x')
+  y = z- h_funct;
+  //Using Jacobian for H matrix, update KF   
   MatrixXd Ht = H_.transpose();
   MatrixXd S_ = H_ * P_ * Ht + R_;
   MatrixXd S_i = S_.inverse();
