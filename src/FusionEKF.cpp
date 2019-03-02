@@ -71,7 +71,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     // first measurement
     cout << "EKF: " << endl;
     ekf_.x_ = VectorXd(4);
-    ekf_.x_ << 1, 1, 1, 1;
+    ekf_.x_ << 0, 0, 0, 0;
 
     //initialize x_state
     //x_state = VectorXd(4);
@@ -88,8 +88,6 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       //Initialize state using measurement values
       ekf_.x_[0] = measurement_pack.raw_measurements_[0];
       ekf_.x_[1] = measurement_pack.raw_measurements_[1];
-      ekf_.x_[2] = measurement_pack.raw_measurements_[2];
-      ekf_.x_[3] = measurement_pack.raw_measurements_[2];
 
     }
 
@@ -117,7 +115,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   float dt_4 = dt_3 * dt;
   int noise_ax = 9;
   int noise_ay = 9;
-  //Q 
+  //Define Q 
   ekf_.Q_ <<  dt_4/4*noise_ax, 0, dt_3/2*noise_ax, 0,
          0, dt_4/4*noise_ay, 0, dt_3/2*noise_ay,
          dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
@@ -130,22 +128,23 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   /**
    * Update
    */
-   VectorXd z = 0,0;
-   //z << 0,0;
   
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
-    //update radar measurement using EKF
+    //R matrix for radar
     ekf_.R_ = R_radar_;
-    VectorXd x_state = ekf_.x_;
+    //H matrix should be the Jacobian
     Hj_ = tools.CalculateJacobian(ekf_.x_);
     ekf_.H_ = Hj_;
-    ekf_.UpdateEKF(&z);
+    //Update
+    ekf_.UpdateEKF(measurement_pack.raw_measurements_);
 
   } else {
-    //update the laser measurement- normal KF
+    //R matrix for laser
     ekf_.R_ = R_laser_;
+    //H matrix for laser
     ekf_.H_ = H_laser_;
-    ekf_.Update(&z);
+    //update using the new measurement for laser
+    ekf_.Update(measurement_pack.raw_measurements_);
 
   }
 
