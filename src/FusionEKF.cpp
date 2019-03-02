@@ -2,6 +2,7 @@
 #include <iostream>
 #include "Eigen/Dense"
 #include "tools.h"
+#include "kalman_filter.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -48,7 +49,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    */
   if (!is_initialized_) {
     //create KF instance
-     kalman_filter ekf_;
+     KalmanFilter ekf_;
     
     //initialize F matrix
      ekf_.F_ = MatrixXd(4, 4);
@@ -79,8 +80,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     //fill in estimate with current measurements if first
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
       // Convert & initialize
-      x_state[0] = measurement_pack.raw_measurements_[0]*cos(measurement_pack.raw_measurements_[1]);
-      ekf_.x_[1] = measurement_pack.raw_measurements_[0]*sin(measurement_pack.raw_measurements_[1])
+      ekf_.x_[0] = measurement_pack.raw_measurements_[0]*cos(measurement_pack.raw_measurements_[1]);
+      ekf_.x_[1] = measurement_pack.raw_measurements_[0]*sin(measurement_pack.raw_measurements_[1]);
 
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
@@ -100,28 +101,28 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   /**
    * Prediction
    */
-
-  //////////////UPDATE Q////////////////////////
- //calculate values for updating Q noise matrix
-  float dt_2 = dt * dt;
-  float dt_3 = dt_2 * dt;
-  float dt_4 = dt_3 * dt;
-  noise_ax = 9;
-  noise_ay = 9;
-  //Q 
-  ekf_.Q_ <<  dt_4/4*noise_ax, 0, dt_3/2*noise_ax, 0,
-         0, dt_4/4*noise_ay, 0, dt_3/2*noise_ay,
-         dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
-         0, dt_3/2*noise_ay, 0, dt_2*noise_ay;
-  
   ///////////////UPDATE F//////////////////////////////
   //change in time is new time minus old
   double dt = (measurement_pack.timestamp_ - previous_timestamp_);
   //the new time is now old, since we have delta t
   previous_timestamp_ = measurement_pack.timestamp_;  
   //new F matrix values based on new delta T
-  kf_.F_(0, 2) = dt;
-  kf_.F_(1, 3) = dt;
+  ekf_.F_(0, 2) = dt;
+  ekf_.F_(1, 3) = dt;
+  
+  //////////////UPDATE Q////////////////////////
+ //calculate values for updating Q noise matrix
+  float dt_2 = dt * dt;
+  float dt_3 = dt_2 * dt;
+  float dt_4 = dt_3 * dt;
+  int noise_ax = 9;
+  int noise_ay = 9;
+  //Q 
+  ekf_.Q_ <<  dt_4/4*noise_ax, 0, dt_3/2*noise_ax, 0,
+         0, dt_4/4*noise_ay, 0, dt_3/2*noise_ay,
+         dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
+         0, dt_3/2*noise_ay, 0, dt_2*noise_ay;
+  
 
   //Predict the next position
   ekf_.Predict();
@@ -129,11 +130,14 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   /**
    * Update
    */
-
+   VectorXd z = 0,0;
+   //z << 0,0;
+  
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
     //update radar measurement using EKF
     ekf_.R_ = R_radar_;
-    Hj_ = tools.CalculateJacobian(&x_);
+    VectorXd x_state = ekf_.x_;
+    Hj_ = tools.CalculateJacobian(ekf_.x_);
     ekf_.H_ = Hj_;
     ekf_.UpdateEKF(&z);
 
@@ -141,7 +145,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     //update the laser measurement- normal KF
     ekf_.R_ = R_laser_;
     ekf_.H_ = H_laser_;
-    ekf._Update(&z)
+    ekf_.Update(&z);
 
   }
 

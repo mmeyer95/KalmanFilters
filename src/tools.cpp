@@ -12,24 +12,24 @@ Tools::~Tools() {}
 VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
                               const vector<VectorXd> &ground_truth) {
   //initialize root mean square error
-	VectorXd rmse(4);
-  	rmse << 0,0,0,0;
+  VectorXd RMSE(4);
+  RMSE << 0,0,0,0;
   
     for (unsigned int i=0; i < estimations.size(); ++i) {
     VectorXd residual = estimations[i]-ground_truth[i];
     residual = residual.array()*residual.array();
-    rmse += residual;
-
+    RMSE += residual;
+    }
   //calculate the mean
-  rmse = rmse/estimations.size();
+  RMSE = RMSE/estimations.size();
   //calculate the squared root
-  rmse = rmse.array().sqrt();
+  RMSE = RMSE.array().sqrt();
   
   //return
-  return rmse;
+  return RMSE;
 }
 
-MatrixXd Tools::CalculateJacobian(const VectorXd &x_state) {
+MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
   //Create floats of the matrix values
   float px = x_state(0);
   float py = x_state(1);
@@ -42,16 +42,16 @@ MatrixXd Tools::CalculateJacobian(const VectorXd &x_state) {
   float c3 = (c1*c2);
   
   // check division by zero
-  if (fabs(c1) < 0.0001) {
+  /**if (fabs(c1) < 0.0001) {
     cout << "CalculateJacobian () - Error - Division by Zero" << endl;
-    return Hj;
-  }
+  }**/
   //Calculate Jacobian
-  Hj << (px/c2), (py/c2), 0, 0,
+  VectorXd Hj (3,4);
+    Hj << (px/c2), (py/c2), 0, 0,
       -(py/c1), (px/c1), 0, 0,
       py*(vx*py - vy*px)/c3, px*(px*vy - py*vx)/c3, px/c2, py/c2;
 
   
   //return
-  return Hj
+  return Hj;
 }
