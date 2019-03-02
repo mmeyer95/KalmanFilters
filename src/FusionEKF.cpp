@@ -32,12 +32,11 @@ FusionEKF::FusionEKF() {
               0, 0.0009, 0,
               0, 0, 0.09;
 
-  /**
-   * TODO: Finish initializing the FusionEKF.
-   * TODO: Set the process and measurement noises
-   */
+  //
+  H_laser_ << 1,0,0,0,0,1,0,0;
 
-
+  //
+  Hj_ = tools.CalculateJacobian() 
 }
 
 /**
@@ -55,6 +54,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
      * TODO: Create the covariance matrix.
      * You'll need to convert radar from polar to cartesian coordinates.
      */
+    kalman_filter ekf_;
 
     // first measurement
     cout << "EKF: " << endl;
@@ -86,7 +86,15 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    * TODO: Update the process noise covariance matrix.
    * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
    */
+  //change in time is new time minus old
+  double delta_t_ = measurement_pack.timestamp_ - previous_timestamp_ ;
+  //the new time is now old, since we have delta t
+  previous_timestamp_ = measurement_pack.timestamp_;  
+  
+  //new F matrix based on new delta T
+  ekf_.F_ = [1,0,delta_t_,0;0,1,0,delta_t_;0,0,1,0;0,0,0,1] 
 
+  //Predict the next position
   ekf_.Predict();
 
   /**
@@ -100,10 +108,12 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    */
 
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
-    // TODO: Radar updates
+    //update radar measurement using EKF
+    ekf_.UpdateEKF(&z);
 
   } else {
-    // TODO: Laser updates
+    //update the laser measurement- normal KF
+    ekf._Update(&z)
 
   }
 

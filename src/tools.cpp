@@ -29,7 +29,7 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   return rmse;
 }
 
-MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
+MatrixXd Tools::CalculateJacobian(const VectorXd &x_state) {
 //Create floats for Jacobian calculation
   float px = x_state(0);
   float py = x_state(1);
