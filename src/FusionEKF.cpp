@@ -32,10 +32,13 @@ FusionEKF::FusionEKF() {
               0, 0, 0.09;
 
   //Initialize H_laser_
-  H_laser_ << 1,0,0,0,0,1,0,0;
+  H_laser_ << 1,0,0,0,
+              0,1,0,0;
 
   //Initialize Jacobian
-  Hj_ << 0,0,0,0,0,0,0,0,0,0,0,0; 
+  Hj_ << 0,0,0,0,
+         0,0,0,0,
+         0,0,0,0; 
 }
 
 /**
@@ -67,6 +70,10 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
     //initialize Q
     ekf_.Q_ = MatrixXd(4,4);
+    ekf_.Q_ << 0,0,0,0,
+               0,0,0,0,
+               0,0,0,0,
+               0,0,0,0;
     
     // first measurement
     cout << "EKF: " << endl;
@@ -80,14 +87,14 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     //fill in estimate with current measurements if first
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
       // Convert & initialize
-      ekf_.x_[0] = measurement_pack.raw_measurements_[0]*cos(measurement_pack.raw_measurements_[1]);
-      ekf_.x_[1] = measurement_pack.raw_measurements_[0]*sin(measurement_pack.raw_measurements_[1]);
+      ekf_.x_(0) = measurement_pack.raw_measurements_(0)*cos(measurement_pack.raw_measurements_(1));
+      ekf_.x_(1) = measurement_pack.raw_measurements_(0)*sin(measurement_pack.raw_measurements_(1));
 
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       //Initialize state using measurement values
-      ekf_.x_[0] = measurement_pack.raw_measurements_[0];
-      ekf_.x_[1] = measurement_pack.raw_measurements_[1];
+      ekf_.x_(0) = measurement_pack.raw_measurements_(0);
+      ekf_.x_(1) = measurement_pack.raw_measurements_(1);
 
     }
 
@@ -116,10 +123,14 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   int noise_ax = 9;
   int noise_ay = 9;
   //Define Q 
-  ekf_.Q_ <<  dt_4/4*noise_ax, 0, dt_3/2*noise_ax, 0,
-         0, dt_4/4*noise_ay, 0, dt_3/2*noise_ay,
-         dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
-         0, dt_3/2*noise_ay, 0, dt_2*noise_ay;
+  ekf_.Q_(0,2) = dt_3/2*noise_ax;
+  ekf_.Q_(0,0) = dt_4/4*noise_ax;
+  ekf_.Q_(1,1) = dt_4/4*noise_ay;
+  ekf_.Q_(1,3) = dt_3/2*noise_ay;
+  ekf_.Q_(2,0) = dt_3/2*noise_ax; 
+  ekf_.Q_(2,2) = dt_2*noise_ax;
+  ekf_.Q_(3,1) = dt_3/2*noise_ay;
+  ekf_.Q_(3,3) = dt_2*noise_ay;
   
 
   //Predict the next position
