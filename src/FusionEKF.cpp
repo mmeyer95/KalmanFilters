@@ -39,6 +39,21 @@ FusionEKF::FusionEKF() {
   Hj_ << 0,0,0,0,
          0,0,0,0,
          0,0,0,0; 
+  
+  //initialize F matrix
+  F_ = MatrixXd(4, 4);
+  F_ << 1, 0, 1, 0,
+        0, 1, 0, 1,
+        0, 0, 1, 0,
+        0, 0, 0, 1;
+      
+
+  //initialize Q
+  Q_ = MatrixXd(4,4);
+  Q_ << 0,0,0,0,
+        0,0,0,0,
+        0,0,0,0,
+        0,0,0,0;
 }
 
 /**
@@ -51,50 +66,30 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    * Initialization
    */
   if (!is_initialized_) {
-    //create KF instance
-     KalmanFilter ekf_;
     
-    //initialize F matrix
-     ekf_.F_ = MatrixXd(4, 4);
-     ekf_.F_ << 1, 0, 1, 0,
-            0, 1, 0, 1,
-            0, 0, 1, 0,
-            0, 0, 0, 1;
-
     //initialize covariance matrix
-     ekf_.P_ = MatrixXd(4, 4);
-     ekf_.P_ << 1, 0, 0, 0,
+  	P_ = MatrixXd(4, 4);
+    P_ << 1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 1000, 0,
             0, 0, 0, 1000;
-
-    //initialize Q
-    ekf_.Q_ = MatrixXd(4,4);
-    ekf_.Q_ << 0,0,0,0,
-               0,0,0,0,
-               0,0,0,0,
-               0,0,0,0;
     
+    //create KF instance
+    KalmanFilter(x_,P_,F_,H_laser_,R_laser_,Q_) ekf_;
     // first measurement
     cout << "EKF: " << endl;
     ekf_.x_ = VectorXd(4);
     ekf_.x_ << 0, 0, 0, 0;
-
-    //initialize x_state
-    //x_state = VectorXd(4);
-    //x_state << 0,0,0,0;
     
     //fill in estimate with current measurements if first
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
       // Convert & initialize
-      ekf_.x_(0) = measurement_pack.raw_measurements_(0)*cos(measurement_pack.raw_measurements_(1));
-      ekf_.x_(1) = measurement_pack.raw_measurements_(0)*sin(measurement_pack.raw_measurements_(1));
+      ekf_.x_<< measurement_pack.raw_measurements_[0]*cos(measurement_pack.raw_measurements_[1]), measurement_pack.raw_measurements_[0]*sin(measurement_pack.raw_measurements_[1]),0,0;
 
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       //Initialize state using measurement values
-      ekf_.x_(0) = measurement_pack.raw_measurements_(0);
-      ekf_.x_(1) = measurement_pack.raw_measurements_(1);
+      ekf_.x_<< measurement_pack.raw_measurements_[0], 			                  measurement_pack.raw_measurements_[1],0,0;
 
     }
 
@@ -112,8 +107,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   //the new time is now old, since we have delta t
   previous_timestamp_ = measurement_pack.timestamp_;  
   //new F matrix values based on new delta T
-  ekf_.F_(0, 2) = dt;
-  ekf_.F_(1, 3) = dt;
+  F_(0, 2) = dt;
+  F_(1, 3) = dt;
   
   //////////////UPDATE Q////////////////////////
  //calculate values for updating Q noise matrix
@@ -122,15 +117,15 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   float dt_4 = dt_3 * dt;
   int noise_ax = 9;
   int noise_ay = 9;
-  //Define Q 
-  ekf_.Q_(0,2) = dt_3/2*noise_ax;
-  ekf_.Q_(0,0) = dt_4/4*noise_ax;
-  ekf_.Q_(1,1) = dt_4/4*noise_ay;
-  ekf_.Q_(1,3) = dt_3/2*noise_ay;
-  ekf_.Q_(2,0) = dt_3/2*noise_ax; 
-  ekf_.Q_(2,2) = dt_2*noise_ax;
-  ekf_.Q_(3,1) = dt_3/2*noise_ay;
-  ekf_.Q_(3,3) = dt_2*noise_ay;
+  //Update Q 
+  Q_(0,2) = dt_3/2*noise_ax;
+  Q_(0,0) = dt_4/4*noise_ax;
+  Q_(1,1) = dt_4/4*noise_ay;
+  Q_(1,3) = dt_3/2*noise_ay;
+  Q_(2,0) = dt_3/2*noise_ax; 
+  Q_(2,2) = dt_2*noise_ax;
+  Q_(3,1) = dt_3/2*noise_ay;
+  Q_(3,3) = dt_2*noise_ay;
   
 
   //Predict the next position
@@ -146,6 +141,10 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     //H matrix should be the Jacobian
     Hj_ = tools.CalculateJacobian(ekf_.x_);
     ekf_.H_ = Hj_;
+    //std::cout << ekf_.H_ << std::endl;
+    //F & Q
+    //ekf_.Q_ = Q_;
+    //ekf_.F_ = F_;
     //Update
     ekf_.UpdateEKF(measurement_pack.raw_measurements_);
 
@@ -154,6 +153,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.R_ = R_laser_;
     //H matrix for laser
     ekf_.H_ = H_laser_;
+    //std::cout << ekf_.H_ << std::endl;
     //update using the new measurement for laser
     ekf_.Update(measurement_pack.raw_measurements_);
 

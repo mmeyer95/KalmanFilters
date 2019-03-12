@@ -46,7 +46,7 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   if (h2<0) {
     h2 = h2 + 360;
   }
-  float h3 = (x_[0]*x_[2]+x_[1]*x_[3])/h1;
+  float h3 = (x_(0)*x_(2)+x_(1)*x_(3))/h1;
   VectorXd h_funct(3); 
   h_funct << h1,h2,h3;
   
