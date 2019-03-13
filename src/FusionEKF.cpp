@@ -55,7 +55,8 @@ FusionEKF::FusionEKF() {
         0,0,0,0,
         0,0,0,0;
   
-  //ekf_.R_ = R_radar_;
+  ekf_.R_ = R_radar_;
+  ekf_.H_ = Hj_;
 }
 
 /**
@@ -79,21 +80,25 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     
     // first measurement
     cout << "EKF: " << endl;
+    
     ekf_.x_ = VectorXd(4);
     ekf_.x_ << 1, 1, 1, 1;
     
     //fill in estimate with current measurements if first
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
       // Convert
+      cout << "CP 2" << endl;
       float term1 = measurement_pack.raw_measurements_[0]*cos(measurement_pack.raw_measurements_[1]);
       float term2 = measurement_pack.raw_measurements_[0]*sin(measurement_pack.raw_measurements_[1]);
       //initialize
       ekf_.x_<< term1, term2,0,0;
+      cout << "CP 3" << endl;
 
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       //Initialize state using measurement values
-      ekf_.x_<< measurement_pack.raw_measurements_[0], 			                  measurement_pack.raw_measurements_[1],0,0;
+      cout << "CP 4" << endl;
+      ekf_.x_<< measurement_pack.raw_measurements_[0], measurement_pack.raw_measurements_[1],0,0;
 
     }
 
@@ -113,7 +118,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   //new F matrix values based on new delta T
   ekf_.F_(0, 2) = dt;
   ekf_.F_(1, 3) = dt;
-  
+  cout << "CP 4-2" << endl;
   //////////////UPDATE Q////////////////////////
  //calculate values for updating Q noise matrix
   float dt_2 = dt * dt;
@@ -141,20 +146,27 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
     //R matrix for radar
+    cout << "CP 5" << endl;
+    //ekf_.R_.resize(3,3);
+    cout << "CP 6" << endl;
     ekf_.R_ = R_radar_;
+    cout << "CP 7" << endl;
     //H matrix should be the Jacobian
     Hj_ = tools.CalculateJacobian(ekf_.x_);
+    cout << "CP 8" << endl;
     ekf_.H_ = Hj_;
-    //std::cout << ekf_.H_ << std::endl;
-    //F & Q
-    //ekf_.Q_ = Q_;
-    //ekf_.F_ = F_;
+    cout << "CP 9" << endl;
+
     //Update
     ekf_.UpdateEKF(measurement_pack.raw_measurements_);
 
   } else {
     //R matrix for laser
+    cout << "CP 10" << endl;
+    //ekf_.R_.resize(2,2);
+    cout << "CP 11" << endl;
     ekf_.R_ = R_laser_;
+    cout << "CP 12" << endl;
     //H matrix for laser
     ekf_.H_ = H_laser_;
     //std::cout << ekf_.H_ << std::endl;
