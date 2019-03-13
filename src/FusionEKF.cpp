@@ -41,19 +41,21 @@ FusionEKF::FusionEKF() {
          0,0,0,0; 
   
   //initialize F matrix
-  F_ = MatrixXd(4, 4);
-  F_ << 1, 0, 1, 0,
+  ekf_.F_ = MatrixXd(4, 4);
+  ekf_.F_ << 1, 0, 1, 0,
         0, 1, 0, 1,
         0, 0, 1, 0,
         0, 0, 0, 1;
       
 
   //initialize Q
-  Q_ = MatrixXd(4,4);
-  Q_ << 0,0,0,0,
+  ekf_.Q_ = MatrixXd(4,4);
+  ekf_.Q_ << 0,0,0,0,
         0,0,0,0,
         0,0,0,0,
         0,0,0,0;
+  
+
 }
 
 /**
@@ -68,14 +70,13 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   if (!is_initialized_) {
     
     //initialize covariance matrix
-  	P_ = MatrixXd(4, 4);
-    P_ << 1, 0, 0, 0,
+  	ekf_.P_ = MatrixXd(4, 4);
+    ekf_.P_ << 1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 1000, 0,
             0, 0, 0, 1000;
     
-    //create KF instance
-    KalmanFilter(x_,P_,F_,H_laser_,R_laser_,Q_) ekf_;
+    
     // first measurement
     cout << "EKF: " << endl;
     ekf_.x_ = VectorXd(4);
@@ -83,8 +84,11 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     
     //fill in estimate with current measurements if first
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
-      // Convert & initialize
-      ekf_.x_<< measurement_pack.raw_measurements_[0]*cos(measurement_pack.raw_measurements_[1]), measurement_pack.raw_measurements_[0]*sin(measurement_pack.raw_measurements_[1]),0,0;
+      // Convert
+      float term1 = measurement_pack.raw_measurements_[0]*cos(measurement_pack.raw_measurements_[1]);
+      float term2 = measurement_pack.raw_measurements_[0]*sin(measurement_pack.raw_measurements_[1]);
+      //initialize
+      ekf_.x_<< term1, term2,0,0;
 
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
@@ -107,8 +111,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   //the new time is now old, since we have delta t
   previous_timestamp_ = measurement_pack.timestamp_;  
   //new F matrix values based on new delta T
-  F_(0, 2) = dt;
-  F_(1, 3) = dt;
+  ekf_.F_(0, 2) = dt;
+  ekf_.F_(1, 3) = dt;
   
   //////////////UPDATE Q////////////////////////
  //calculate values for updating Q noise matrix
@@ -118,14 +122,14 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   int noise_ax = 9;
   int noise_ay = 9;
   //Update Q 
-  Q_(0,2) = dt_3/2*noise_ax;
-  Q_(0,0) = dt_4/4*noise_ax;
-  Q_(1,1) = dt_4/4*noise_ay;
-  Q_(1,3) = dt_3/2*noise_ay;
-  Q_(2,0) = dt_3/2*noise_ax; 
-  Q_(2,2) = dt_2*noise_ax;
-  Q_(3,1) = dt_3/2*noise_ay;
-  Q_(3,3) = dt_2*noise_ay;
+  ekf_.Q_(0,2) = dt_3/2*noise_ax;
+  ekf_.Q_(0,0) = dt_4/4*noise_ax;
+  ekf_.Q_(1,1) = dt_4/4*noise_ay;
+  ekf_.Q_(1,3) = dt_3/2*noise_ay;
+  ekf_.Q_(2,0) = dt_3/2*noise_ax; 
+  ekf_.Q_(2,2) = dt_2*noise_ax;
+  ekf_.Q_(3,1) = dt_3/2*noise_ay;
+  ekf_.Q_(3,3) = dt_2*noise_ay;
   
 
   //Predict the next position
