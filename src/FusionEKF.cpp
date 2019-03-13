@@ -55,7 +55,7 @@ FusionEKF::FusionEKF() {
         0,0,0,0,
         0,0,0,0;
   
-
+  ekf_.R_ = R_radar_;
 }
 
 /**
