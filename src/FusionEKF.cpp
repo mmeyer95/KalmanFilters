@@ -55,7 +55,7 @@ FusionEKF::FusionEKF() {
         0,0,0,0,
         0,0,0,0;
   
-  ekf_.R_ = R_radar_;
+  //ekf_.R_ = R_radar_;
 }
 
 /**
@@ -80,7 +80,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     // first measurement
     cout << "EKF: " << endl;
     ekf_.x_ = VectorXd(4);
-    ekf_.x_ << 0, 0, 0, 0;
+    ekf_.x_ << 1, 1, 1, 1;
     
     //fill in estimate with current measurements if first
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
