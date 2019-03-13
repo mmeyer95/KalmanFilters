@@ -4,6 +4,7 @@
 #include "tools.h"
 #include "kalman_filter.h"
 
+
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::cout;
@@ -55,8 +56,6 @@ FusionEKF::FusionEKF() {
         0,0,0,0,
         0,0,0,0;
   
-  //ekf_.R_ = R_radar_;
-  //ekf_.H_ = Hj_;
 }
 
 /**
@@ -74,15 +73,14 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   	ekf_.P_ = MatrixXd(4, 4);
     ekf_.P_ << 1, 0, 0, 0,
             0, 1, 0, 0,
-            0, 0, 1000, 0,
-            0, 0, 0, 1000;
+            0, 0, 1, 0,
+            0, 0, 0, 1;
     
     
     // first measurement
-    cout << "EKF: " << endl;
-    
+    cout << "EKF: " << endl;    
     ekf_.x_ = VectorXd(4);
-    ekf_.x_ << 1, 1, 1, 1;
+
     
     //fill in estimate with current measurements if first
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
@@ -96,13 +94,11 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       double vx = rho_dot * cos(phi); 
       double vy = rho_dot * sin(phi); 
       ekf_.x_ << x, y, vx, vy;
-      
 
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
       //Initialize state using measurement values
       ekf_.x_<< measurement_pack.raw_measurements_[0], measurement_pack.raw_measurements_[1],0,0;
-
     }
 
     // done initializing, no need to predict or update
@@ -123,6 +119,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   ekf_.F_(1, 3) = dt;
   //////////////UPDATE Q////////////////////////
  //calculate values for updating Q noise matrix
+  if (dt<0.1){dt=0.1;}
   float dt_2 = dt * dt;
   float dt_3 = dt_2 * dt;
   float dt_4 = dt_3 * dt;

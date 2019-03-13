@@ -1,8 +1,11 @@
 #include "kalman_filter.h"
 #include <iostream>
+#include <math.h>
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using std::cout;
+using std::endl;
 
 KalmanFilter::KalmanFilter() {}
 
@@ -40,25 +43,27 @@ void KalmanFilter::Update(const VectorXd &z) {
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
-  //calculate h(x') individual terms, check for negative angle value
-  float h1 = pow((pow(x_[0],2),pow(x_[1],2)),0.5);
-  float h2 = atan2(x_[1],x_[0]);
-  if (h2<0) {
-    h2 = h2 + 360;
-  }
+  //calculate h(x') individual terms, normalize angle value
+  float h1 = sqrt((x_(0)*x_(0)+x_(1)*x_(1)));
+  float h2 = atan2(x_(1),x_(0));
   float h3 = (x_(0)*x_(2)+x_(1)*x_(3))/h1;
   VectorXd h_funct(3); 
   h_funct << h1,h2,h3;
+
   
   //calculate z using h(x')
   VectorXd y = z- h_funct;
-  //Using Jacobian for H matrix, update KF   
+  
+  //normalize angle
+  y(1) = atan2(sin(y(1)), cos(y(1)));
+  //Using Jacobian for H matrix, update KF  
   MatrixXd Ht = H_.transpose();
   MatrixXd S_ = H_ * P_ * Ht + R_;
   MatrixXd S_i = S_.inverse();
   MatrixXd K =  P_ * Ht * S_i;
   long x_size = x_.size();
   MatrixXd I = MatrixXd::Identity(x_size, x_size);
+  
   //new state
   x_=x_+K*y;
   P_=(I-K*H_)*P_;
