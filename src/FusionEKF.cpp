@@ -88,12 +88,13 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       double phi = measurement_pack.raw_measurements_(1); //bearing 
       double rho_dot = measurement_pack.raw_measurements_(2);// range rate 
       double x = rho * cos(phi); 
-      if (x < 0.0001) { x = 0.0001; } 
+      if (x < 0.001) { x = 0.001; } 
       double y = rho * sin(phi); 
-      if (y < 0.0001) { y = 0.0001; } 
+      if (y < 0.001) { y = 0.001; } 
       double vx = rho_dot * cos(phi); 
       double vy = rho_dot * sin(phi); 
       ekf_.x_ << x, y, vx, vy;
+      previous_timestamp_ = measurement_pack.timestamp_;
 
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
@@ -111,6 +112,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
    */
   ///////////////UPDATE F//////////////////////////////
   //change in time is new time minus old
+  cout << "Time: " << measurement_pack.timestamp_ << endl;
   float dt = (measurement_pack.timestamp_ - previous_timestamp_)/1000000.0;
   //the new time is now old, since we have delta t
   previous_timestamp_ = measurement_pack.timestamp_;  
